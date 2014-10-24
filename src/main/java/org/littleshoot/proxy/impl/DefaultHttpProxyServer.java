@@ -55,8 +55,11 @@ import org.littleshoot.proxy.ProxyAuthenticator;
 import org.littleshoot.proxy.SslEngineSource;
 import org.littleshoot.proxy.TransportProtocol;
 import org.littleshoot.proxy.UnknownTransportProtocolError;
+import org.littleshoot.proxy.extras.SimpleProxyAuthenticator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Optional;
 
 /**
  * <p>
@@ -595,6 +598,19 @@ public class DefaultHttpProxyServer implements HttpProxyServer {
                     "idle_connection_timeout");
             this.connectTimeout = ProxyUtils.extractInt(props,
                     "connect_timeout", 0);
+            final Map<String, Optional<String>> authProperties =
+            		new HashMap<String, Optional<String>>();
+            // If username and password are provided, set a proxy authenticator
+            for( String key : props.stringPropertyNames()) {
+            	if (!key.startsWith("auth.")) { continue; }
+            	final String userName = key.substring("auth.".length());
+            	final Optional<String> password = 
+            			Optional.fromNullable(props.getProperty(key));
+            	authProperties.put(userName, password);
+            }
+            if (!authProperties.isEmpty()) {
+            	this.proxyAuthenticator = new SimpleProxyAuthenticator(authProperties);
+            }
         }
 
         @Override
